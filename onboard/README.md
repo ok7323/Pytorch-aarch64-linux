@@ -2,7 +2,7 @@
 
 ## 1. Install the python3.7+pytorch on aarch64 linux board
 
-./download_file.sh
+tar zxvf home.tar.gz
 
 ./install.sh
 
