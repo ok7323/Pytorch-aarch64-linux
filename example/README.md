@@ -3,7 +3,7 @@
 # Mnist test application
 
 Ex)
-python3 mnist.py
+python3 inference.py
 
 # Test Result
 
