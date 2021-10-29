@@ -10,3 +10,7 @@ Onboard version contains python3.7, python library as well as pytorch in order t
 For instruction, read README.md in each directory.
 
 It was tested on Qualcomm SA8195 platform which works on AGL (Automotive Grade Linux).
+
+## Install python3.7 & python library
+
+./download_file.sh
