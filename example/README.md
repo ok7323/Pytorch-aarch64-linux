@@ -1,6 +1,6 @@
 # Pytorch mnist application
 
-# Mnist test application
+# Mnist inference
 
 Ex)
 python3 inference.py
