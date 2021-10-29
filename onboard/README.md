@@ -9,5 +9,5 @@ tar zxvf home.tar.gz
 ## 2. Restart shell
 
 
-## 3. Test yout build environment using example.
+## 3. Test your build environment using example.
 
