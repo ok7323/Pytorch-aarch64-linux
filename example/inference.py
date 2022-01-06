@@ -43,7 +43,7 @@ def test(model, device, test_loader):
             for i, value in enumerate(output):
                 if(count >= 20): break
                 result = torch.argmax(value)
-                print('  Result: output "{0}"\tfile_path: ./images/{1}/{2}.jpg'.format(result, target[i],i))
+                print('  Result: output "{0}"\tfile_path: ./images/sample/{2}.jpg'.format(result,i))
                 count += 1
 
 def main():
