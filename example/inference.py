@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
-
+import matplotlib.pyplot as plt
 
 class Net(nn.Module):
     def __init__(self):
@@ -33,41 +33,53 @@ class Net(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
-
-def train(args, model, device, train_loader, optimizer, epoch):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        loss.backward()
-        optimizer.step()
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
-            if args.dry_run:
-                break
-
-
 def test(model, device, test_loader):
     model.eval()
     test_loss = 0
     correct = 0
+    analysis_target = [0 for i in range(10)]
+    analysis_output = [0 for i in range(10)]
+    count = 0
+    true_count = 0
+    false_count = 0
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            for idx, value in enumerate(target):
+                analysis_target[value] += 1
+                result = torch.argmax(output[idx])
+                if value == result:
+                    analysis_output[value] += 1
+                    if(true_count < 5):
+                        if(true_count == 0):
+                            print('\nTrue inference sample images')
+                        print('  Result: target "{0}" -> output "{1}"\tfile_path: ./images/true_sample/{2}.jpg'.format(
+                            value,result,1000*count+idx))
+                        true_count += 1
+                else:
+                    if(false_count < 5):
+                        if(false_count == 0):
+                            print('\nFalse inference sample images')
+                        print('  Result: target "{0}" -> output "{1}"\tfile_path: ./images/false_sample/{2}.jpg'.format(
+                            value,result,1000*count+idx))
+                        false_count += 1
+
+            test_loss += F.nll_loss(output, target, reduction='sum').item()
+            pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
+            count += 1
 
     test_loss /= len(test_loader.dataset)
-
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+    print('\nNumber result')
+    for idx, value in enumerate(analysis_target):
+        acc = (analysis_output[idx] / value) * 100.0
+        print('  Number of {0} images: {1} EA\tAccuracy: {2} %'.format(
+            idx, value, round(acc,2)))
+    print('\nTotal result')
+    print('  Number of total images: {0} EA'.format(len(test_loader.dataset)))
+    print('  Average loss: {:.4f}\t\tAccuracy: {:.2f} %\n'.format(
+        test_loss, 100. * correct / len(test_loader.dataset)))
 
 
 def main():
@@ -117,19 +129,14 @@ def main():
                        transform=transform)
     dataset2 = datasets.MNIST('./data', train=False,
                        transform=transform)
-    train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
+    
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    #model = Net().to(device)
     model = Net()
     model.load_state_dict(torch.load("model_cnn.pt"))
     model.to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
-
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    for epoch in range(1, args.epochs + 1):
-        test(model, device, test_loader)
-        scheduler.step()
+    test(model, device, test_loader)
 
 if __name__ == '__main__':
     main()
