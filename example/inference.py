@@ -36,6 +36,7 @@ class Net(nn.Module):
 def test(model, device, test_loader):
     model.eval()
     count = 0
+    text = ""
     print('\nImages inference')
     with torch.no_grad():
         for data, target in test_loader:
@@ -43,8 +44,12 @@ def test(model, device, test_loader):
             for i, value in enumerate(output):
                 if(count >= 20): break
                 result = torch.argmax(value)
-                print('  Result: output "{0}"\tfile_path: ./images/sample/{2}.jpg'.format(result,i))
+                #print('  Result: output "{0}"\tfile_path: ./images/sample/{1}.jpg'.format(result,i))
+                text += 'Result: output "{0}"\tfile_path: ./images/sample/{1}.jpg\n'.format(result,i)
                 count += 1
+    print(text) 
+
+
 
 def main():
     # Training settings
