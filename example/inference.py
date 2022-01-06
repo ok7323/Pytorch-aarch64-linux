@@ -33,54 +33,26 @@ class Net(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+def tensor_to_image(tensor):
+    tensor = tensor*255
+    tensor = np.array(tensor, dtype=np.uint8)
+    if np.ndim(tensor)>3:
+        assert tensor.shape[0] == 1
+        tensor = tensor[0]
+    return PIL.Image.fromarray(tensor)
+
 def test(model, device, test_loader):
     model.eval()
-    test_loss = 0
-    correct = 0
-    analysis_target = [0 for i in range(10)]
-    analysis_output = [0 for i in range(10)]
     count = 0
-    true_count = 0
-    false_count = 0
+    print('\nImages inference')
     with torch.no_grad():
         for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
             output = model(data)
-            for idx, value in enumerate(target):
-                analysis_target[value] += 1
-                result = torch.argmax(output[idx])
-                if value == result:
-                    analysis_output[value] += 1
-                    if(true_count < 5):
-                        if(true_count == 0):
-                            print('\nTrue inference sample images')
-                        print('  Result: target "{0}" -> output "{1}"\tfile_path: ./images/true_sample/{2}.jpg'.format(
-                            value,result,1000*count+idx))
-                        true_count += 1
-                else:
-                    if(false_count < 5):
-                        if(false_count == 0):
-                            print('\nFalse inference sample images')
-                        print('  Result: target "{0}" -> output "{1}"\tfile_path: ./images/false_sample/{2}.jpg'.format(
-                            value,result,1000*count+idx))
-                        false_count += 1
-
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
-            pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum().item()
-            count += 1
-
-    test_loss /= len(test_loader.dataset)
-    print('\nNumber result')
-    for idx, value in enumerate(analysis_target):
-        acc = (analysis_output[idx] / value) * 100.0
-        print('  Number of {0} images: {1} EA\tAccuracy: {2} %'.format(
-            idx, value, round(acc,2)))
-    print('\nTotal result')
-    print('  Number of total images: {0} EA'.format(len(test_loader.dataset)))
-    print('  Average loss: {:.4f}\t\tAccuracy: {:.2f} %\n'.format(
-        test_loss, 100. * correct / len(test_loader.dataset)))
-
+            for i, value in enumerate(output):
+                if(count >= 20): break
+                result = torch.argmax(value)
+                print('  Result: output "{0}"\tfile_path: ./images/{1}/{2}.jpg'.format(result, target[i],i))
+                count += 1
 
 def main():
     # Training settings
@@ -125,17 +97,14 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
-    dataset1 = datasets.MNIST('./data', train=True, download=True,
-                       transform=transform)
-    dataset2 = datasets.MNIST('./data', train=False,
+    dataset1 = datasets.MNIST('./data', train=False,
                        transform=transform)
     
-    test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
+    test_loader = torch.utils.data.DataLoader(dataset1, **test_kwargs)
 
     model = Net()
     model.load_state_dict(torch.load("model_cnn.pt"))
     model.to(device)
-    optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
     test(model, device, test_loader)
 
 if __name__ == '__main__':
